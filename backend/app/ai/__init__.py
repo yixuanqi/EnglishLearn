@@ -1,0 +1,73 @@
+"""AI services module."""
+
+from app.ai.config import AISettings, ai_settings
+from app.ai.exceptions import (
+    AIServiceError,
+    LLMServiceError,
+    PronunciationError,
+    QuotaExceededError,
+    RateLimitError,
+    STTServiceError,
+    ServiceUnavailableError,
+    TTSServiceError,
+)
+from app.ai.retry import CircuitBreaker, RetryConfig, retry_with_backoff, with_retry
+from app.ai.schemas import (
+    AIResponseContent,
+    DialogueContent,
+    DialogueLine,
+    PhonemeEvaluation,
+    VocabularyItem,
+    WordEvaluation,
+    WordTimestamp,
+)
+from app.ai.services import (
+    AdvancedEvaluationResult,
+    BasicEvaluationResult,
+    DialogueService,
+    FeedbackResult,
+    LearningFeedbackService,
+    PronunciationEvaluator,
+    STTRequest,
+    STTResponse,
+    STTService,
+    TTSRequest,
+    TTSResponse,
+    TTSService,
+)
+
+__all__ = [
+    "AISettings",
+    "ai_settings",
+    "AIServiceError",
+    "LLMServiceError",
+    "TTSServiceError",
+    "STTServiceError",
+    "PronunciationError",
+    "RateLimitError",
+    "ServiceUnavailableError",
+    "QuotaExceededError",
+    "RetryConfig",
+    "CircuitBreaker",
+    "retry_with_backoff",
+    "with_retry",
+    "DialogueLine",
+    "VocabularyItem",
+    "DialogueContent",
+    "AIResponseContent",
+    "WordTimestamp",
+    "PhonemeEvaluation",
+    "WordEvaluation",
+    "DialogueService",
+    "TTSService",
+    "TTSRequest",
+    "TTSResponse",
+    "STTService",
+    "STTRequest",
+    "STTResponse",
+    "PronunciationEvaluator",
+    "BasicEvaluationResult",
+    "AdvancedEvaluationResult",
+    "LearningFeedbackService",
+    "FeedbackResult",
+]
