@@ -1,0 +1,62 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: english_trainer_db
+    environment:
+      POSTGRES_USER: english_trainer
+      POSTGRES_PASSWORD: english_trainer_password
+      POSTGRES_DB: english_trainer_dev
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U english_trainer"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: english_trainer_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: english_trainer_backend
+    environment:
+      DATABASE_URL: postgresql+asyncpg://english_trainer:english_trainer_password@postgres:5432/english_trainer_dev
+      REDIS_URL: redis://redis:6379/0
+      JWT_SECRET_KEY: dev_secret_key_change_in_production
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      AZURE_SPEECH_KEY: ${AZURE_SPEECH_KEY}
+      AZURE_SPEECH_REGION: eastus
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app
+      - audio_files:/app/audio
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+volumes:
+  postgres_data:
+  redis_data:
+  audio_files:

@@ -1,0 +1,133 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: english_trainer_db
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-english_trainer}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-english_trainer_prod}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-english_trainer}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - english_trainer_network
+
+  redis:
+    image: redis:7-alpine
+    container_name: english_trainer_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - english_trainer_network
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: english_trainer_backend
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-english_trainer}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-english_trainer_prod}
+      REDIS_URL: redis://redis:6379/0
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY}
+      JWT_ALGORITHM: HS256
+      JWT_ACCESS_TOKEN_EXPIRE_MINUTES: 30
+      JWT_REFRESH_TOKEN_EXPIRE_DAYS: 7
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      AZURE_SPEECH_KEY: ${AZURE_SPEECH_KEY}
+      AZURE_SPEECH_REGION: ${AZURE_SPEECH_REGION:-eastus}
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
+      APPLE_SHARED_SECRET: ${APPLE_SHARED_SECRET}
+      GOOGLE_PACKAGE_NAME: ${GOOGLE_PACKAGE_NAME:-com.englishtrainer.app}
+      GOOGLE_SERVICE_ACCOUNT_JSON: ${GOOGLE_SERVICE_ACCOUNT_JSON}
+      CORS_ORIGINS: ${CORS_ORIGINS:-["https://englishspeakingtrainer.com"]}
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - audio_files:/app/audio
+      - logs:/app/logs
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s
+    restart: unless-stopped
+    networks:
+      - english_trainer_network
+
+  nginx:
+    image: nginx:alpine
+    container_name: english_trainer_nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+      - nginx_logs:/var/log/nginx
+    depends_on:
+      - backend
+    restart: unless-stopped
+    networks:
+      - english_trainer_network
+
+  backup:
+    image: prodrigestivill/postgres-backup-local:15
+    container_name: english_trainer_backup
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_DB: ${POSTGRES_DB:-english_trainer_prod}
+      POSTGRES_USER: ${POSTGRES_USER:-english_trainer}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      SCHEDULE: "@daily"
+      BACKUP_KEEP_DAYS: 7
+      BACKUP_KEEP_WEEKS: 4
+      BACKUP_KEEP_MONTHS: 6
+    volumes:
+      - backups:/backups
+    depends_on:
+      - postgres
+    restart: unless-stopped
+    networks:
+      - english_trainer_network
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  audio_files:
+    driver: local
+  logs:
+    driver: local
+  nginx_logs:
+    driver: local
+  backups:
+    driver: local
+
+networks:
+  english_trainer_network:
+    driver: bridge
