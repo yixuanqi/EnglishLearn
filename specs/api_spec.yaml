@@ -1,0 +1,1748 @@
+openapi: 3.1.0
+info:
+  title: English Speaking Trainer API
+  description: |
+    RESTful API for English Speaking Trainer mobile application.
+    
+    This API provides endpoints for:
+    - User authentication and profile management
+    - Scenario browsing and selection
+    - AI-powered dialogue generation
+    - Practice session management
+    - Speech pronunciation evaluation
+    - Learning progress reports
+    - Subscription and payment management
+    
+  version: 1.0.0
+  contact:
+    name: API Support
+    email: api@englishspeakingtrainer.com
+    
+servers:
+  - url: https://api.englishspeakingtrainer.com/v1
+    description: Production server
+  - url: https://staging-api.englishspeakingtrainer.com/v1
+    description: Staging server
+  - url: http://localhost:8000/v1
+    description: Development server
+
+tags:
+  - name: Auth
+    description: Authentication and authorization endpoints
+  - name: Scenarios
+    description: Scenario management endpoints
+  - name: Dialogues
+    description: Dialogue generation endpoints
+  - name: Practice
+    description: Practice session endpoints
+  - name: Evaluation
+    description: Speech evaluation endpoints
+  - name: Reports
+    description: Learning report endpoints
+  - name: Payments
+    description: Payment and subscription endpoints
+
+paths:
+  # ============================================
+  # AUTH ENDPOINTS
+  # ============================================
+  
+  /auth/register:
+    post:
+      tags:
+        - Auth
+      summary: Register a new user
+      description: Create a new user account with email and password
+      operationId: registerUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserRegistrationRequest'
+      responses:
+        '201':
+          description: User registered successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400':
+          description: Invalid request data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Email already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/login:
+    post:
+      tags:
+        - Auth
+      summary: User login
+      description: Authenticate user and return access tokens
+      operationId: loginUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/refresh:
+    post:
+      tags:
+        - Auth
+      summary: Refresh access token
+      description: Get a new access token using refresh token
+      operationId: refreshToken
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshTokenRequest'
+      responses:
+        '200':
+          description: Token refreshed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenResponse'
+        '401':
+          description: Invalid or expired refresh token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/logout:
+    post:
+      tags:
+        - Auth
+      summary: User logout
+      description: Invalidate current session
+      operationId: logoutUser
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Logout successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/me:
+    get:
+      tags:
+        - Auth
+      summary: Get current user
+      description: Retrieve the authenticated user's profile
+      operationId: getCurrentUser
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: User profile retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/me:
+    patch:
+      tags:
+        - Auth
+      summary: Update user profile
+      description: Update the authenticated user's profile information
+      operationId: updateUserProfile
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateProfileRequest'
+      responses:
+        '200':
+          description: Profile updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+        '400':
+          description: Invalid request data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # ============================================
+  # SCENARIO ENDPOINTS
+  # ============================================
+  
+  /scenarios:
+    get:
+      tags:
+        - Scenarios
+      summary: List scenarios
+      description: Get paginated list of available scenarios with optional filtering
+      operationId: listScenarios
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: category
+          in: query
+          description: Filter by category
+          schema:
+            $ref: '#/components/schemas/ScenarioCategory'
+        - name: difficulty
+          in: query
+          description: Filter by difficulty level
+          schema:
+            $ref: '#/components/schemas/DifficultyLevel'
+        - name: is_premium
+          in: query
+          description: Filter by premium status
+          schema:
+            type: boolean
+        - name: page
+          in: query
+          description: Page number
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: page_size
+          in: query
+          description: Items per page
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+            default: 20
+      responses:
+        '200':
+          description: Scenarios retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ScenarioListResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /scenarios/categories:
+    get:
+      tags:
+        - Scenarios
+      summary: Get scenario categories
+      description: Retrieve all available scenario categories
+      operationId: getScenarioCategories
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Categories retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CategoryListResponse'
+
+  /scenarios/{scenario_id}:
+    get:
+      tags:
+        - Scenarios
+      summary: Get scenario details
+      description: Retrieve detailed information about a specific scenario
+      operationId: getScenario
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: scenario_id
+          in: path
+          required: true
+          description: Scenario ID
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Scenario retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ScenarioDetail'
+        '404':
+          description: Scenario not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /scenarios/custom:
+    post:
+      tags:
+        - Scenarios
+      summary: Create custom scenario
+      description: Create a custom scenario (Premium feature)
+      operationId: createCustomScenario
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCustomScenarioRequest'
+      responses:
+        '201':
+          description: Custom scenario created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ScenarioDetail'
+        '400':
+          description: Invalid request data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '402':
+          description: Premium subscription required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # ============================================
+  # DIALOGUE ENDPOINTS
+  # ============================================
+  
+  /dialogues:
+    post:
+      tags:
+        - Dialogues
+      summary: Generate dialogue
+      description: Generate a new dialogue for a scenario using AI
+      operationId: generateDialogue
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenerateDialogueRequest'
+      responses:
+        '201':
+          description: Dialogue generated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DialogueResponse'
+        '400':
+          description: Invalid request data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Scenario not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /dialogues/{dialogue_id}:
+    get:
+      tags:
+        - Dialogues
+      summary: Get dialogue
+      description: Retrieve a specific dialogue by ID
+      operationId: getDialogue
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: dialogue_id
+          in: path
+          required: true
+          description: Dialogue ID
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Dialogue retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DialogueResponse'
+        '404':
+          description: Dialogue not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /dialogues/{dialogue_id}/tts:
+    post:
+      tags:
+        - Dialogues
+      summary: Generate TTS audio
+      description: Generate text-to-speech audio for a dialogue
+      operationId: generateDialogueTTS
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: dialogue_id
+          in: path
+          required: true
+          description: Dialogue ID
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TTSRequest'
+      responses:
+        '200':
+          description: TTS audio generated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TTSResponse'
+        '404':
+          description: Dialogue not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # ============================================
+  # PRACTICE ENDPOINTS
+  # ============================================
+  
+  /practice/sessions:
+    post:
+      tags:
+        - Practice
+      summary: Start practice session
+      description: Initialize a new practice session for a dialogue
+      operationId: startPracticeSession
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StartSessionRequest'
+      responses:
+        '201':
+          description: Practice session started
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PracticeSession'
+        '400':
+          description: Invalid request data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Dialogue not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /practice/sessions/{session_id}:
+    get:
+      tags:
+        - Practice
+      summary: Get practice session
+      description: Retrieve details of a practice session
+      operationId: getPracticeSession
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: session_id
+          in: path
+          required: true
+          description: Practice session ID
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Session retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PracticeSession'
+        '404':
+          description: Session not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /practice/sessions/{session_id}/submit:
+    post:
+      tags:
+        - Practice
+      summary: Submit speech
+      description: Submit user speech audio for a practice turn
+      operationId: submitSpeech
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: session_id
+          in: path
+          required: true
+          description: Practice session ID
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SubmitSpeechRequest'
+      responses:
+        '200':
+          description: Speech processed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpeechResult'
+        '400':
+          description: Invalid audio data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Session not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /practice/sessions/{session_id}/end:
+    post:
+      tags:
+        - Practice
+      summary: End practice session
+      description: End a practice session and get final results
+      operationId: endPracticeSession
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: session_id
+          in: path
+          required: true
+          description: Practice session ID
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Session ended successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionResult'
+        '404':
+          description: Session not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /practice/history:
+    get:
+      tags:
+        - Practice
+      summary: Get practice history
+      description: Retrieve user's practice session history
+      operationId: getPracticeHistory
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          description: Page number
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: page_size
+          in: query
+          description: Items per page
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+            default: 20
+      responses:
+        '200':
+          description: History retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PracticeHistoryResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # ============================================
+  # EVALUATION ENDPOINTS
+  # ============================================
+  
+  /evaluation/basic:
+    post:
+      tags:
+        - Evaluation
+      summary: Basic pronunciation evaluation
+      description: Evaluate pronunciation with overall scoring
+      operationId: basicEvaluation
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/BasicEvaluationRequest'
+      responses:
+        '200':
+          description: Evaluation completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BasicEvaluationResult'
+        '400':
+          description: Invalid audio data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /evaluation/advanced:
+    post:
+      tags:
+        - Evaluation
+      summary: Advanced pronunciation evaluation
+      description: Evaluate pronunciation with word-level and phoneme-level feedback (Premium)
+      operationId: advancedEvaluation
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AdvancedEvaluationRequest'
+      responses:
+        '200':
+          description: Evaluation completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdvancedEvaluationResult'
+        '400':
+          description: Invalid audio data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '402':
+          description: Premium subscription required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # ============================================
+  # REPORT ENDPOINTS
+  # ============================================
+  
+  /reports/weekly:
+    get:
+      tags:
+        - Reports
+      summary: Weekly learning report
+      description: Get user's weekly learning progress report
+      operationId: getWeeklyReport
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: week_start
+          in: query
+          description: Start date of the week (ISO 8601)
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Report retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WeeklyReport'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /reports/monthly:
+    get:
+      tags:
+        - Reports
+      summary: Monthly learning report
+      description: Get user's monthly learning progress report
+      operationId: getMonthlyReport
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: month
+          in: query
+          description: Month in YYYY-MM format
+          schema:
+            type: string
+            pattern: '^\d{4}-\d{2}$'
+      responses:
+        '200':
+          description: Report retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MonthlyReport'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /reports/stats:
+    get:
+      tags:
+        - Reports
+      summary: Learning statistics
+      description: Get aggregate learning statistics for the user
+      operationId: getLearningStats
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Statistics retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LearningStats'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # ============================================
+  # PAYMENT ENDPOINTS
+  # ============================================
+  
+  /payments/plans:
+    get:
+      tags:
+        - Payments
+      summary: Get subscription plans
+      description: Retrieve available subscription plans
+      operationId: getSubscriptionPlans
+      responses:
+        '200':
+          description: Plans retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlanListResponse'
+
+  /payments/subscribe:
+    post:
+      tags:
+        - Payments
+      summary: Create subscription
+      description: Subscribe to a premium plan
+      operationId: createSubscription
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateSubscriptionRequest'
+      responses:
+        '200':
+          description: Subscription initiated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubscriptionResponse'
+        '400':
+          description: Invalid request data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '402':
+          description: Payment failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /payments/subscription:
+    get:
+      tags:
+        - Payments
+      summary: Get subscription status
+      description: Retrieve user's current subscription status
+      operationId: getSubscriptionStatus
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Subscription status retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubscriptionStatus'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /payments/subscription/cancel:
+    post:
+      tags:
+        - Payments
+      summary: Cancel subscription
+      description: Cancel the current subscription
+      operationId: cancelSubscription
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Subscription cancelled
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /payments/webhook:
+    post:
+      tags:
+        - Payments
+      summary: Payment webhook
+      description: Handle payment provider webhook events
+      operationId: handlePaymentWebhook
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: Webhook processed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT access token
+
+  schemas:
+    # ==========================================
+    # ENUMS
+    # ==========================================
+    
+    ScenarioCategory:
+      type: string
+      enum:
+        - exhibition
+        - technical
+        - business
+        - daily_life
+      description: Scenario category
+
+    DifficultyLevel:
+      type: string
+      enum:
+        - beginner
+        - intermediate
+        - advanced
+      description: Difficulty level
+
+    SubscriptionPlan:
+      type: string
+      enum:
+        - free
+        - premium_monthly
+        - premium_annual
+      description: Subscription plan type
+
+    SessionStatus:
+      type: string
+      enum:
+        - active
+        - completed
+        - abandoned
+      description: Practice session status
+
+    # ==========================================
+    # AUTH SCHEMAS
+    # ==========================================
+    
+    UserRegistrationRequest:
+      type: object
+      required:
+        - email
+        - password
+        - name
+      properties:
+        email:
+          type: string
+          format: email
+          description: User email address
+        password:
+          type: string
+          minLength: 8
+          maxLength: 128
+          description: User password (min 8 characters)
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+          description: User display name
+
+    LoginRequest:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+
+    RefreshTokenRequest:
+      type: object
+      required:
+        - refresh_token
+      properties:
+        refresh_token:
+          type: string
+
+    UpdateProfileRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        avatar_url:
+          type: string
+          format: uri
+        english_level:
+          type: string
+          enum:
+            - beginner
+            - intermediate
+            - advanced
+        interests:
+          type: array
+          items:
+            $ref: '#/components/schemas/ScenarioCategory'
+
+    AuthResponse:
+      type: object
+      properties:
+        access_token:
+          type: string
+          description: JWT access token (15 min expiry)
+        refresh_token:
+          type: string
+          description: Refresh token (7 days expiry)
+        token_type:
+          type: string
+          default: bearer
+        expires_in:
+          type: integer
+          description: Token expiry in seconds
+        user:
+          $ref: '#/components/schemas/UserProfile'
+
+    TokenResponse:
+      type: object
+      properties:
+        access_token:
+          type: string
+        token_type:
+          type: string
+          default: bearer
+        expires_in:
+          type: integer
+
+    UserProfile:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        name:
+          type: string
+        avatar_url:
+          type: string
+          format: uri
+          nullable: true
+        english_level:
+          type: string
+          enum:
+            - beginner
+            - intermediate
+            - advanced
+        subscription_plan:
+          $ref: '#/components/schemas/SubscriptionPlan'
+        subscription_expires_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    # ==========================================
+    # SCENARIO SCHEMAS
+    # ==========================================
+    
+    ScenarioSummary:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        description:
+          type: string
+        category:
+          $ref: '#/components/schemas/ScenarioCategory'
+        difficulty:
+          $ref: '#/components/schemas/DifficultyLevel'
+        estimated_duration:
+          type: integer
+          description: Estimated duration in minutes
+        is_premium:
+          type: boolean
+        thumbnail_url:
+          type: string
+          format: uri
+          nullable: true
+
+    ScenarioDetail:
+      allOf:
+        - $ref: '#/components/schemas/ScenarioSummary'
+        - type: object
+          properties:
+            context:
+              type: string
+              description: Detailed scenario context
+            user_role:
+              type: string
+              description: Role the user will play
+            ai_role:
+              type: string
+              description: Role the AI will play
+            key_vocabulary:
+              type: array
+              items:
+                type: object
+                properties:
+                  word:
+                    type: string
+                  definition:
+                    type: string
+                  example:
+                    type: string
+            tips:
+              type: array
+              items:
+                type: string
+
+    ScenarioListResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ScenarioSummary'
+        total:
+          type: integer
+        page:
+          type: integer
+        page_size:
+          type: integer
+        total_pages:
+          type: integer
+
+    CategoryListResponse:
+      type: object
+      properties:
+        categories:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                $ref: '#/components/schemas/ScenarioCategory'
+              name:
+                type: string
+              description:
+                type: string
+              scenario_count:
+                type: integer
+              icon:
+                type: string
+
+    CreateCustomScenarioRequest:
+      type: object
+      required:
+        - title
+        - category
+        - context
+        - user_role
+        - ai_role
+      properties:
+        title:
+          type: string
+          maxLength: 200
+        description:
+          type: string
+          maxLength: 500
+        category:
+          $ref: '#/components/schemas/ScenarioCategory'
+        context:
+          type: string
+          maxLength: 2000
+        user_role:
+          type: string
+          maxLength: 200
+        ai_role:
+          type: string
+          maxLength: 200
+        difficulty:
+          $ref: '#/components/schemas/DifficultyLevel'
+
+    # ==========================================
+    # DIALOGUE SCHEMAS
+    # ==========================================
+    
+    GenerateDialogueRequest:
+      type: object
+      required:
+        - scenario_id
+      properties:
+        scenario_id:
+          type: string
+          format: uuid
+        variation:
+          type: integer
+          minimum: 1
+          maximum: 5
+          default: 1
+          description: Dialogue variation number
+
+    DialogueLine:
+      type: object
+      properties:
+        id:
+          type: integer
+        speaker:
+          type: string
+          enum:
+            - user
+            - ai
+        text:
+          type: string
+        translation:
+          type: string
+          nullable: true
+        audio_url:
+          type: string
+          format: uri
+          nullable: true
+
+    DialogueResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        scenario_id:
+          type: string
+          format: uuid
+        lines:
+          type: array
+          items:
+            $ref: '#/components/schemas/DialogueLine'
+        created_at:
+          type: string
+          format: date-time
+
+    TTSRequest:
+      type: object
+      properties:
+        voice:
+          type: string
+          description: Voice ID
+          default: default
+        speed:
+          type: number
+          minimum: 0.5
+          maximum: 2.0
+          default: 1.0
+
+    TTSResponse:
+      type: object
+      properties:
+        audio_url:
+          type: string
+          format: uri
+        duration:
+          type: number
+          description: Audio duration in seconds
+
+    # ==========================================
+    # PRACTICE SCHEMAS
+    # ==========================================
+    
+    StartSessionRequest:
+      type: object
+      required:
+        - dialogue_id
+      properties:
+        dialogue_id:
+          type: string
+          format: uuid
+
+    PracticeSession:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        dialogue_id:
+          type: string
+          format: uuid
+        status:
+          $ref: '#/components/schemas/SessionStatus'
+        current_turn:
+          type: integer
+        total_turns:
+          type: integer
+        started_at:
+          type: string
+          format: date-time
+        ended_at:
+          type: string
+          format: date-time
+          nullable: true
+
+    SubmitSpeechRequest:
+      type: object
+      required:
+        - audio
+        - turn_index
+      properties:
+        audio:
+          type: string
+          format: binary
+          description: Audio file (WAV, MP3, M4A)
+        turn_index:
+          type: integer
+          description: Current turn index in dialogue
+
+    SpeechResult:
+      type: object
+      properties:
+        transcription:
+          type: string
+          description: Speech-to-text transcription
+        expected_text:
+          type: string
+          description: Expected text from dialogue
+        pronunciation_score:
+          type: number
+          minimum: 0
+          maximum: 100
+        accuracy_score:
+          type: number
+          minimum: 0
+          maximum: 100
+        fluency_score:
+          type: number
+          minimum: 0
+          maximum: 100
+        completeness_score:
+          type: number
+          minimum: 0
+          maximum: 100
+        feedback:
+          type: string
+        ai_response:
+          type: object
+          properties:
+            text:
+              type: string
+            audio_url:
+              type: string
+              format: uri
+        next_turn:
+          type: integer
+          nullable: true
+
+    SessionResult:
+      type: object
+      properties:
+        session_id:
+          type: string
+          format: uuid
+        scenario_title:
+          type: string
+        duration_seconds:
+          type: integer
+        total_turns:
+          type: integer
+        completed_turns:
+          type: integer
+        overall_score:
+          type: number
+          minimum: 0
+          maximum: 100
+        average_accuracy:
+          type: number
+        average_fluency:
+          type: number
+        average_completeness:
+          type: number
+        strengths:
+          type: array
+          items:
+            type: string
+        improvements:
+          type: array
+          items:
+            type: string
+
+    PracticeHistoryResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/SessionResult'
+        total:
+          type: integer
+        page:
+          type: integer
+        page_size:
+          type: integer
+
+    # ==========================================
+    # EVALUATION SCHEMAS
+    # ==========================================
+    
+    BasicEvaluationRequest:
+      type: object
+      required:
+        - audio
+        - reference_text
+      properties:
+        audio:
+          type: string
+          format: binary
+        reference_text:
+          type: string
+
+    BasicEvaluationResult:
+      type: object
+      properties:
+        transcription:
+          type: string
+        overall_score:
+          type: number
+          minimum: 0
+          maximum: 100
+        accuracy_score:
+          type: number
+        fluency_score:
+          type: number
+        completeness_score:
+          type: number
+        feedback:
+          type: string
+
+    AdvancedEvaluationRequest:
+      type: object
+      required:
+        - audio
+        - reference_text
+      properties:
+        audio:
+          type: string
+          format: binary
+        reference_text:
+          type: string
+        include_phonemes:
+          type: boolean
+          default: true
+
+    WordEvaluation:
+      type: object
+      properties:
+        word:
+          type: string
+        accuracy_score:
+          type: number
+        error_type:
+          type: string
+          enum:
+            - none
+            - mispronunciation
+            - omission
+            - insertion
+          nullable: true
+        phonemes:
+          type: array
+          items:
+            type: object
+            properties:
+              phoneme:
+                type: string
+              accuracy_score:
+                type: number
+
+    AdvancedEvaluationResult:
+      allOf:
+        - $ref: '#/components/schemas/BasicEvaluationResult'
+        - type: object
+          properties:
+            word_evaluations:
+              type: array
+              items:
+                $ref: '#/components/schemas/WordEvaluation'
+
+    # ==========================================
+    # REPORT SCHEMAS
+    # ==========================================
+    
+    WeeklyReport:
+      type: object
+      properties:
+        week_start:
+          type: string
+          format: date
+        week_end:
+          type: string
+          format: date
+        total_sessions:
+          type: integer
+        total_duration_minutes:
+          type: integer
+        average_score:
+          type: number
+        scenarios_practiced:
+          type: integer
+        improvement_percentage:
+          type: number
+        daily_breakdown:
+          type: array
+          items:
+            type: object
+            properties:
+              date:
+                type: string
+                format: date
+              sessions:
+                type: integer
+              duration_minutes:
+                type: integer
+              average_score:
+                type: number
+
+    MonthlyReport:
+      type: object
+      properties:
+        month:
+          type: string
+          description: Month in YYYY-MM format
+        total_sessions:
+          type: integer
+        total_duration_minutes:
+          type: integer
+        average_score:
+          type: number
+        scenarios_practiced:
+          type: integer
+        weekly_progress:
+          type: array
+          items:
+            $ref: '#/components/schemas/WeeklyReport'
+        top_scenarios:
+          type: array
+          items:
+            type: object
+            properties:
+              scenario_title:
+                type: string
+              sessions:
+                type: integer
+              average_score:
+                type: number
+        score_trend:
+          type: array
+          items:
+            type: object
+            properties:
+              week:
+                type: integer
+              score:
+                type: number
+
+    LearningStats:
+      type: object
+      properties:
+        total_sessions:
+          type: integer
+        total_duration_hours:
+          type: number
+        overall_average_score:
+          type: number
+        best_score:
+          type: number
+        scenarios_completed:
+          type: integer
+        current_streak:
+          type: integer
+          description: Current practice streak in days
+        longest_streak:
+          type: integer
+        member_since:
+          type: string
+          format: date
+
+    # ==========================================
+    # PAYMENT SCHEMAS
+    # ==========================================
+    
+    SubscriptionPlanDetail:
+      type: object
+      properties:
+        id:
+          $ref: '#/components/schemas/SubscriptionPlan'
+        name:
+          type: string
+        description:
+          type: string
+        price:
+          type: number
+        currency:
+          type: string
+          default: USD
+        billing_period:
+          type: string
+          enum:
+            - monthly
+            - annual
+        features:
+          type: array
+          items:
+            type: string
+
+    PlanListResponse:
+      type: object
+      properties:
+        plans:
+          type: array
+          items:
+            $ref: '#/components/schemas/SubscriptionPlanDetail'
+
+    CreateSubscriptionRequest:
+      type: object
+      required:
+        - plan_id
+        - payment_method_id
+      properties:
+        plan_id:
+          $ref: '#/components/schemas/SubscriptionPlan'
+        payment_method_id:
+          type: string
+          description: Payment provider payment method ID
+
+    SubscriptionResponse:
+      type: object
+      properties:
+        subscription_id:
+          type: string
+        status:
+          type: string
+          enum:
+            - active
+            - pending
+            - failed
+        client_secret:
+          type: string
+          description: Payment provider client secret for 3D Secure
+
+    SubscriptionStatus:
+      type: object
+      properties:
+        plan:
+          $ref: '#/components/schemas/SubscriptionPlan'
+        status:
+          type: string
+          enum:
+            - active
+            - cancelled
+            - expired
+            - none
+        current_period_start:
+          type: string
+          format: date-time
+          nullable: true
+        current_period_end:
+          type: string
+          format: date-time
+          nullable: true
+        cancel_at_period_end:
+          type: boolean
+
+    # ==========================================
+    # COMMON SCHEMAS
+    # ==========================================
+    
+    MessageResponse:
+      type: object
+      properties:
+        message:
+          type: string
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+              description: Error code
+            message:
+              type: string
+              description: Human-readable error message
+            details:
+              type: array
+              items:
+                type: object
+                properties:
+                  field:
+                    type: string
+                  message:
+                    type: string
+              nullable: true
+            request_id:
+              type: string
+              description: Request ID for debugging
