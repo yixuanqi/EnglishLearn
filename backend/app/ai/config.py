@@ -14,7 +14,7 @@ class AISettings(BaseSettings):
     minimax_model: str = "abab6.5s-chat"
     minimax_base_url: str = "https://api.minimax.chat/v1"
 
-    deepseek_api_key: str = "sk-8efa770c51604601837136e936b36234"
+    deepseek_api_key: str = "xxx"
     deepseek_model: str = "deepseek-chat"
     deepseek_base_url: str = "https://api.deepseek.com"
 
