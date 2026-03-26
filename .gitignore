@@ -163,3 +163,7 @@ deployment/terraform/.terraform/
 deployment/terraform/*.tfstate
 deployment/terraform/*.tfstate.*
 deployment/terraform/.tfvars
+
+# Large files
+tools/*.zip
+tools/*.tar.gz
